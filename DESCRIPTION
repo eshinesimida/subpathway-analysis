@@ -1,0 +1,8 @@
+Package: SubSPIA
+Title: Subpathway analysis based on signaling-pathway impact analysis of signaling pathway
+Version: 0.1
+Authors:Xianbin Li <a454656783@gmail.com>
+Description:Subpathway analysis function based on the alogirthm of minimum spanning tree 
+Depends: R (>= 3.1.0)
+License: MIT
+LazyData: true
