@@ -1,10 +1,7 @@
 #Subpathway analysis based on colorectal cancer
 
-library(graphite)
-library(Rgraphviz)
 library(SPIA)
 library(XML)
-
 
 data(colorectalcancer)
 library(hgu133plus2.db)
