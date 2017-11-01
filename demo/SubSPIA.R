@@ -70,9 +70,9 @@ for(p in 1:length(paths)){
   #mapkG3<-KEGGpathway2Graph(mapkpathway,expandGenes=F)
   mapkG3<-KEGGpathway2Graph_c(mapkpathway,expandGenes=F)
   
-  #mapkG3转变成有无向图
+  #mapkG3 transform to undirected graph
   g_u<-Convert_u(mapkG3)
-  #找子通路的集合
+  #find subpathway
   
   subpathwaylist<-subpathway_set(g_u,mapkpathway,de=DE_Colorectal,n=4)
   if(length(subpathwaylist)==0)
@@ -112,7 +112,7 @@ for(p in 1:length(paths)){
     }
     if (length(index_sub)==0)
       next
-    edg_sub<-edg[index_sub]# 子图的边集合
+    edg_sub<-edg[index_sub]# edge set of subpathway
     
     
     G<-list()
