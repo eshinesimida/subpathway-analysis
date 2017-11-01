@@ -1,4 +1,4 @@
-expandKEGGsubPathway_gene<-function(pathway,subNode=diffgenes) 
+expandKEGGsubPathway_gene<-function (pathway,subNode=diffgenes) 
 {
   nodes.old <- nodes(pathway)
   nodes.old <- subNode
