@@ -1,10 +1,7 @@
-#Subpathway analysis based on colorectal cancer
-
 library(graphite)
 library(Rgraphviz)
 library(SPIA)
 library(XML)
-
 
 data(colorectalcancer)
 library(hgu133plus2.db)
@@ -17,30 +14,47 @@ DE_Colorectal=tg1$logFC
 names(DE_Colorectal)<-as.vector(tg1$ENTREZ)
 ALL_Colorectal<-top$ENTREZ
 
-kgml.path=system.file("extdata/keggxml/hsa",package="SPIA")
-mdir=kgml.path
-paths<-dir(mdir,pattern=".xml")
-mapkpathway<-try(parseKGML(paste(mdir,paths[6],sep="/")),TRUE)
+#kgml.path=system.file("extdata/keggxml/hsa",package="SPIA")
+#mdir=kgml.path
+#paths<-dir(mdir,pattern=".xml")
+#mapkpathway<-try(parseKGML(paste(mdir,paths[2],sep="/")),TRUE)
+L<-list()
 
-mapkG3_c<-KEGGpathway2Graph_c(mapkpathway,expandGenes=F)
-mapkG2 <- KEGGpathway2Graph(mapkpathway, expandGenes=TRUE)
+rel<-c("activation",
+       "compound",
+       "binding/association",
+       "expression",
+       "inhibition",
+       "activation_phosphorylation",
+       "phosphorylation",
+       "inhibition_phosphorylation",
+       "inhibition_dephosphorylation",
+       "dissociation",
+       "dephosphorylation",
+       "activation_dephosphorylation",
+       "state change",
+       "activation_indirect effect",
+       "inhibition_ubiquination",
+       "ubiquination",
+       "expression_indirect effect",
+       "inhibition_indirect effect",
+       "repression",
+       "dissociation_phosphorylation",
+       "indirect effect_phosphorylation",
+       "activation_binding/association",
+       "indirect effect",
+       "activation_compound",
+       "activation_ubiquination"
+)
+betas=c(1,0,0,1,-1,1,0,-1,-1,0,0,1,0,1,-1,0,1,-1,-1,0,0,1,0,1,1)
+names(betas)=rel
 
-g_u<-Convert_u(mapkG3_c)
+L[[1]]<-NA
+info<-NULL
+info<-rbind(info,c(NA,NA))
+out.path="."
+organism="hsa"
 
-subpathwaylist<-subpathway_set(g_u,mapkpathway,de=DE_Colorectal,n=4)
-sub<-subGraph(subpathwaylist[[1]],mapkG3_c)
-par(mfrow=c(1,2))
-plotsubpathway_Node(sub,mapkG3_c)
-diffNodes<-nodes(sub)
-allNodes <- getKEGGnodeData(mapkG3_c)
-diffgenes<-allNodes[match(diffNodes,names(allNodes))]
-
-gR<-KEGGsubpathway2subGraph(mapkpathway,diffgenes)
-plotsubpathway(gR)
-
-
-
-################
 
 kgml.path=system.file("extdata/keggxml/hsa",package="SPIA")
 mdir=kgml.path
@@ -51,11 +65,15 @@ L_all<-list()
 for(p in 1:length(paths)){
   L<-list()
   info<-NULL
-
+  #  info<-rbind(info,c(NA,NA))
   mapkpathway<-try(parseKGML(paste(mdir,paths[p],sep="/")),TRUE)
   #mapkG3<-KEGGpathway2Graph(mapkpathway,expandGenes=F)
   mapkG3<-KEGGpathway2Graph_c(mapkpathway,expandGenes=F)
+  
+  #mapkG3转变成有无向图
   g_u<-Convert_u(mapkG3)
+  #找子通路的集合
+  
   subpathwaylist<-subpathway_set(g_u,mapkpathway,de=DE_Colorectal,n=4)
   if(length(subpathwaylist)==0)
     next
@@ -70,7 +88,11 @@ for(p in 1:length(paths)){
     diffNodes<-nodes(sub)
     allNodes <- getKEGGnodeData(mapkG3)
     diffgenes<-allNodes[match(diffNodes,names(allNodes))]
-    edg<-mapkpathway@edges
+    mapk<-splitKEGGgroup(mapkpathway)
+    #edg<-mapkpathway@edges
+    edg<-attributes(mapk)$edges
+    edg_id<-getEntryID(edg)
+    #pathway <- splitKEGGgroup_compound(mapkpathway)
     
     refty<-unlist(lapply(diffgenes,function(x){x@type}))
     
@@ -83,11 +105,14 @@ for(p in 1:length(paths)){
     index_sub<-c()
     for(j in 1:length(rownames(sub_edge))){
       for(i in 1:length(edg)){
-        if(edg[i]$relation@entry1ID==sub_edge[j,1] && edg[i]$relation@entry2ID==sub_edge[j,2])
+        #if(edg[i]$relation@entry1ID==sub_edge[j,1] && edg[i]$relation@entry2ID==sub_edge[j,2])
+        if(edg_id[i,1]==sub_edge[j,1] && edg_id[i,2]==sub_edge[j,2]) 
           index_sub<-c(index_sub,i)
       }
     }
-    edg_sub<-edg[index_sub] 
+    if (length(index_sub)==0)
+      next
+    edg_sub<-edg[index_sub]# 子图的边集合
     
     
     G<-list()
@@ -122,8 +147,10 @@ for(p in 1:length(paths)){
     names(LT)<-rel
     
     for(i in 1:length(edg_sub)){
-      tmp<-edg_sub[i]$rel
-      tmp2<-edg_sub[i]$rel@subtype
+      #tmp<-edg_sub[i]$rel
+      tmp<-edg_sub[[i]]
+      #tmp2<-edg_sub[i]$rel@subtype
+      tmp2<-tmp@subtype
       if(length(tmp2)>0){
         zz<-NULL
         
@@ -205,4 +232,6 @@ path.info<-nL[unlist(lapply(nL,function(x){x$NumberOfReactions}))<1 & sumrel]
 
 save(path.info,file=paste(out.path,"/",organism,"SPIA.RData",sep=""))
 
-res_c1<-spia(de=DE_Colorectal, all=ALL_Colorectal, organism="hsa",data.dir="./")
+res_c2<-spia(de=DE_Colorectal, all=ALL_Colorectal, organism="hsa",data.dir="./")
+res_c[,-12]
+
